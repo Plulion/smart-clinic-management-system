@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 @Entity
@@ -32,14 +33,18 @@ public class Patient {
     @Size(max = 255, message = "Address cannot exceed 255 characters")
     private String address;
 
+    @Pattern(regexp = "\\d{10}", message = "Phone must contain exactly 10 digits")
+    private String phone;
+
     public Patient() {
     }
 
-    public Patient(String name, String email, String password, String address) {
+    public Patient(String name, String email, String password, String address, String phone) {
         this.name = name;
         this.email = email;
         this.password = password;
         this.address = address;
+        this.phone = phone;
     }
 
     public Long getId() {
@@ -62,6 +67,10 @@ public class Patient {
         return address;
     }
 
+    public String getPhone() {
+        return phone;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -80,5 +89,9 @@ public class Patient {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 }
