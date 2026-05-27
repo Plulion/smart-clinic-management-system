@@ -1,62 +1,58 @@
-// appointmentRecordService.js
-import { API_BASE_URL } from "../config/config.js";
-const APPOINTMENT_API = `${API_BASE_URL}/appointments`;
+const API_BASE_URL = "/api/appointments";
 
+export async function getAppointmentsByDoctor(doctorId, token) {
+  const headers = {};
 
-//This is for the doctor to get all the patient Appointments
-export async function getAllAppointments(date, patientName, token) {
-  const response = await fetch(`${APPOINTMENT_API}/${date}/${patientName}/${token}`);
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/doctor/${doctorId}`, {
+    method: "GET",
+    headers
+  });
+
   if (!response.ok) {
-    throw new Error("Failed to fetch appointments");
+    throw new Error("Failed to fetch doctor appointments.");
   }
 
-  return await response.json();
+  return response.json();
 }
 
-export async function bookAppointment(appointment, token) {
-  try {
-    const response = await fetch(`${APPOINTMENT_API}/${token}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(appointment)
-    });
-
-    const data = await response.json();
-    return {
-      success: response.ok,
-      message: data.message || "Something went wrong"
-    };
-  } catch (error) {
-    console.error("Error while booking appointment:", error);
-    return {
-      success: false,
-      message: "Network error. Please try again later."
-    };
-  }
-}
-
-export async function updateAppointment(appointment, token) {
-  try {
-    const response = await fetch(`${APPOINTMENT_API}/${token}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(appointment)
-    });
-
-    const data = await response.json();
-    return {
-      success: response.ok,
-      message: data.message || "Something went wrong"
-    };
-  } catch (error) {
-    console.error("Error while booking appointment:", error);
-    return {
-      success: false,
-      message: "Network error. Please try again later."
-    };
-  }
+export function getDemoAppointments() {
+  return [
+    {
+      id: 1,
+      appointmentTime: "2025-04-15T09:00:00",
+      status: 1,
+      patient: {
+        id: 1,
+        name: "Jane Doe",
+        phone: "8881111111",
+        email: "jane.doe@example.com"
+      }
+    },
+    {
+      id: 2,
+      appointmentTime: "2025-04-15T10:00:00",
+      status: 1,
+      patient: {
+        id: 2,
+        name: "John Smith",
+        phone: "8882222222",
+        email: "john.smith@example.com"
+      }
+    },
+    {
+      id: 3,
+      appointmentTime: "2025-04-16T11:00:00",
+      status: 0,
+      patient: {
+        id: 3,
+        name: "Emily Rose",
+        phone: "8883333333",
+        email: "emily.rose@example.com"
+      }
+    }
+  ];
 }

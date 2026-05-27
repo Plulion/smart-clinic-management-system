@@ -1,53 +1,92 @@
-/* this is the style sheet file for index.htlm  */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-/* 
-**Global Reset (`*`)**
+html,
+body {
+  height: 100%;
+  font-family: Arial, sans-serif;
+}
 
-* Remove all default margin and padding.
-* Use `border-box` for sizing to include padding and border in element size.
+.container {
+  min-height: 100vh;
+}
 
-**Base (`html, body`)**
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-* Set height to 100% for full viewport layout.
-* Use the `'Roboto'` sans-serif font for modern, clean typography.
+.main-content {
+  flex: 1;
+  min-height: 70vh;
+  background: linear-gradient(135deg, #e8f5f5, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
 
-**Layout Wrapper (`.wrapper`)**
+.role-card {
+  width: 100%;
+  max-width: 620px;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 42px 32px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  text-align: center;
+}
 
-* Use a vertical flexbox layout.
-* Ensure the wrapper covers at least the full height of the screen (`min-height: 100vh`).
+.role-card h2 {
+  font-size: 34px;
+  color: #014f50;
+  margin-bottom: 12px;
+}
 
-**Heading (`h2`)**
+.subtitle {
+  font-size: 16px;
+  color: #555;
+  margin-bottom: 30px;
+}
 
-* Set a large font size (`48px`) for prominence.
-* Add a bottom margin of `50px` for spacing.
-* Use a dark teal color (`#003e3e`).
-* Make the font bold and use a blended font stack (`'Alegreya', 'Roboto', sans-serif`) for elegant styling.
+.role-buttons {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
 
-**Main Section (`.main-content`)**
+.dashboard-btn {
+  min-width: 140px;
+  border: none;
+  border-radius: 10px;
+  background: #015c5d;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 14px 22px;
+  cursor: pointer;
+  transition: 0.2s ease-in-out;
+}
 
-* Allow the section to grow to fill space with `flex-grow: 1`.
-* Add `40px` of internal padding.
-* Center content both horizontally and vertically using `justify-content` and `align-items`.
-* Display items in a column direction.
-* Center all text.
-* Apply a full-screen background image with:
+.dashboard-btn:hover {
+  background: #017d7e;
+  transform: translateY(-2px);
+}
 
-  * `cover` size
-  * `center` positioning
-  * no repeat
-  * `fixed` attachment to keep image still during scroll
+@media (max-width: 600px) {
+  .role-card {
+    padding: 30px 20px;
+  }
 
-**Buttons (`button`)**
+  .role-card h2 {
+    font-size: 26px;
+  }
 
-* Style with a teal green background (`#015c5d`) and white text.
-* Remove borders and round the corners (`12px`).
-* Use `10px 20px` padding and set width to `200px`.
-* Add a top margin of `10px` for spacing.
-* Enable pointer cursor and readable font size (`16px`).
-* On hover, change background color to bold red (`#A62B1F`).
-
-**Dashboard Buttons (`.dashboard-btn`)**
-
-* Use the same base green background (`#015c5d`) as the default button.
-* On hover, darken the background to deep teal (`#003e3e`) for visual feedback.
- */
+  .dashboard-btn {
+    width: 100%;
+  }
+}
