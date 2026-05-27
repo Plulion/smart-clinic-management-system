@@ -1,68 +1,91 @@
-const modal = document.getElementById("modal");
-const modalBody = document.getElementById("modal-body");
-const closeModal = document.getElementById("closeModal");
+import { openModal } from "../components/modals.js";
+import { API_BASE_URL } from "../config/config.js";
 
-function openModalContent(title, role) {
-  if (!modal || !modalBody) return;
-
-  modalBody.innerHTML = `
-    <h2>${title}</h2>
-    <p>Please continue as ${role}.</p>
-
-    <form id="loginForm" class="modal-form">
-      <input class="input-field" type="text" id="emailOrUsername" placeholder="Email or Username" required />
-      <input class="input-field" type="password" id="password" placeholder="Password" required />
-      <button class="button" type="submit">Continue</button>
-    </form>
-  `;
-
-  modal.classList.add("active");
-
-  const form = document.getElementById("loginForm");
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    localStorage.setItem("userRole", role);
-    localStorage.setItem("token", "demo-token");
-
-    if (role === "admin") {
-      window.location.href = "/admin/dashboard";
-    } else if (role === "doctor") {
-      window.location.href = "/doctor/dashboard";
-    } else if (role === "loggedPatient") {
-      window.location.href = "/pages/loggedPatientDashboard.html";
-    }
-  });
-}
+const ADMIN_API = API_BASE_URL + "/admin";
+const DOCTOR_API = API_BASE_URL + "/doctor/login";
 
 function selectRole(role) {
-  if (role === "patient") {
-    localStorage.setItem("userRole", "patient");
-    window.location.href = "/pages/patientDashboard.html";
-    return;
-  }
-
-  if (role === "admin") {
-    openModalContent("Admin Login", "admin");
-    return;
-  }
-
-  if (role === "doctor") {
-    openModalContent("Doctor Login", "doctor");
-    return;
-  }
+  localStorage.setItem("userRole", role);
 }
 
-document.getElementById("adminBtn")?.addEventListener("click", () => selectRole("admin"));
-document.getElementById("doctorBtn")?.addEventListener("click", () => selectRole("doctor"));
-document.getElementById("patientBtn")?.addEventListener("click", () => selectRole("patient"));
+window.adminLoginHandler = async function () {
+  const username = document.getElementById("adminUsername")?.value;
+  const password = document.getElementById("adminPassword")?.value;
 
-closeModal?.addEventListener("click", () => {
-  modal?.classList.remove("active");
-});
+  const admin = { username, password };
 
-window.addEventListener("click", (event) => {
-  if (event.target === modal) {
-    modal.classList.remove("active");
+  try {
+    const response = await fetch(`${ADMIN_API}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(admin)
+    });
+
+    if (!response.ok) {
+      alert("Invalid credentials!");
+      return;
+    }
+
+    const data = await response.json();
+    localStorage.setItem("token", data.token || "demo-admin-token");
+    selectRole("admin");
+    window.location.href = "/admin/dashboard";
+  } catch (error) {
+    console.error("Admin login error:", error);
+    alert("Unexpected admin login error.");
   }
-});
+};
+
+window.doctorLoginHandler = async function () {
+  const email = document.getElementById("doctorEmail")?.value;
+  const password = document.getElementById("doctorPassword")?.value;
+
+  const doctor = { email, password };
+
+  try {
+    const response = await fetch(DOCTOR_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(doctor)
+    });
+
+    if (!response.ok) {
+      alert("Invalid credentials!");
+      return;
+    }
+
+    const data = await response.json();
+    localStorage.setItem("token", data.token || "demo-doctor-token");
+    localStorage.setItem("doctorId", data.id || data.doctorId || "1");
+    selectRole("doctor");
+    window.location.href = "/doctor/dashboard";
+  } catch (error) {
+    console.error("Doctor login error:", error);
+    alert("Unexpected doctor login error.");
+  }
+};
+
+window.onload = function () {
+  const adminBtn = document.getElementById("adminBtn") || document.getElementById("adminLogin");
+  const doctorBtn = document.getElementById("doctorBtn") || document.getElementById("doctorLogin");
+  const patientBtn = document.getElementById("patientBtn");
+
+  if (adminBtn) {
+    adminBtn.addEventListener("click", () => {
+      openModal("adminLogin");
+    });
+  }
+
+  if (doctorBtn) {
+    doctorBtn.addEventListener("click", () => {
+      openModal("doctorLogin");
+    });
+  }
+
+  if (patientBtn) {
+    patientBtn.addEventListener("click", () => {
+      localStorage.setItem("userRole", "patient");
+      window.location.href = "/pages/patientDashboard.html";
+    });
+  }
+};

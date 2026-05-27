@@ -1,167 +1,115 @@
-import {
-  getAppointmentsByDoctor,
-  getDemoAppointments
-} from "./services/appointmentRecordService.js";
+import { getAllAppointments, getDemoAppointments } from "./services/appointmentRecordService.js";
+import { createPatientRow } from "./components/patientRows.js";
+import { getPrescriptionsByPatientName, getDemoPrescriptions } from "./services/prescriptionServices.js";
 
-import {
-  filterAppointmentsByPatientName
-} from "./services/patientServices.js";
-
-import {
-  getPrescriptionsByPatientName,
-  getDemoPrescriptions
-} from "./services/prescriptionServices.js";
-
-let appointments = [];
-
-const searchBar = document.getElementById("searchBar");
-const todayBtn = document.getElementById("todayBtn");
-const dateFilter = document.getElementById("dateFilter");
 const tableBody = document.getElementById("patientTableBody");
+const searchBar = document.getElementById("searchBar");
+const todayButton = document.getElementById("todayBtn") || document.getElementById("todayButton");
+const datePicker = document.getElementById("dateFilter") || document.getElementById("datePicker");
 const modal = document.getElementById("modal");
 const modalBody = document.getElementById("modal-body");
 const closeModal = document.getElementById("closeModal");
 
-function formatDateTime(value) {
-  if (!value) return "N/A";
+let selectedDate = new Date().toISOString().slice(0, 10);
+let patientName = "null";
+let token = localStorage.getItem("token");
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString();
-}
-
-function getStatusLabel(status) {
-  if (status === 0 || status === "0") return "Scheduled";
-  if (status === 1 || status === "1") return "Completed";
-  if (status === 2 || status === "2") return "Cancelled";
-  return "Unknown";
-}
-
-function renderAppointments(list) {
+function showNoAppointments(message = "No Appointments found for today") {
   if (!tableBody) return;
 
-  tableBody.innerHTML = "";
-
-  if (!list || list.length === 0) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="7" class="noPatientRecord">No appointments found.</td>
-      </tr>
-    `;
-    return;
-  }
-
-  list.forEach((appointment) => {
-    const patient = appointment.patient || {};
-
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td>${patient.id || appointment.patientId || "N/A"}</td>
-      <td>${patient.name || appointment.patientName || "N/A"}</td>
-      <td>${patient.phone || appointment.patientPhone || "N/A"}</td>
-      <td>${patient.email || appointment.patientEmail || "N/A"}</td>
-      <td>${formatDateTime(appointment.appointmentTime || appointment.appointment_time)}</td>
-      <td>${getStatusLabel(appointment.status)}</td>
-      <td>
-        <button class="prescription-btn">View Prescriptions</button>
-      </td>
-    `;
-
-    const prescriptionBtn = row.querySelector(".prescription-btn");
-    prescriptionBtn.addEventListener("click", () => {
-      const patientName = patient.name || appointment.patientName || "";
-      openPrescriptionModal(patientName);
-    });
-
-    tableBody.appendChild(row);
-  });
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="7" class="noPatientRecord">${message}</td>
+    </tr>
+  `;
 }
 
-function applyFilters() {
-  let filtered = [...appointments];
-
-  const searchTerm = searchBar?.value || "";
-  filtered = filterAppointmentsByPatientName(filtered, searchTerm);
-
-  const selectedDate = dateFilter?.value;
-  if (selectedDate) {
-    filtered = filtered.filter((appointment) => {
-      const appointmentValue = appointment.appointmentTime || appointment.appointment_time;
-      if (!appointmentValue) return false;
-
-      const appointmentDate = new Date(appointmentValue).toISOString().slice(0, 10);
-      return appointmentDate === selectedDate;
-    });
-  }
-
-  renderAppointments(filtered);
-}
-
-async function loadAppointments() {
-  try {
-    const token = localStorage.getItem("token");
-    const doctorId = localStorage.getItem("doctorId") || "1";
-
-    appointments = await getAppointmentsByDoctor(doctorId, token);
-  } catch (error) {
-    console.warn("Backend appointments unavailable. Using demo appointments.", error);
-    appointments = getDemoAppointments();
-  }
-
-  renderAppointments(appointments);
-}
-
-async function openPrescriptionModal(patientName) {
+async function openPrescriptionModal(name) {
   if (!modal || !modalBody) return;
 
   let prescriptions = [];
 
   try {
-    const token = localStorage.getItem("token");
-    prescriptions = await getPrescriptionsByPatientName(patientName, token);
+    prescriptions = await getPrescriptionsByPatientName(name, token);
   } catch (error) {
-    console.warn("Backend prescriptions unavailable. Using demo prescriptions.", error);
-    prescriptions = getDemoPrescriptions(patientName);
+    prescriptions = getDemoPrescriptions(name);
   }
 
-  const prescriptionHtml = prescriptions.length
-    ? prescriptions.map((prescription) => `
-        <div class="prescription-item">
-          <p><strong>Patient:</strong> ${prescription.patientName || patientName}</p>
-          <p><strong>Medication:</strong> ${prescription.medication || "N/A"}</p>
-          <p><strong>Dosage:</strong> ${prescription.dosage || "N/A"}</p>
-          <p><strong>Appointment ID:</strong> ${prescription.appointmentId || "N/A"}</p>
-          <p><strong>Notes:</strong> ${prescription.doctorNotes || "No notes"}</p>
-        </div>
-      `).join("")
-    : `<p class="noPatientRecord">No prescriptions found.</p>`;
+  if (!prescriptions || prescriptions.length === 0) {
+    prescriptions = getDemoPrescriptions(name);
+  }
 
   modalBody.innerHTML = `
     <h2>Previous Prescriptions</h2>
     <div class="prescription-list">
-      ${prescriptionHtml}
+      ${prescriptions.map((p) => `
+        <div class="prescription-item">
+          <p><strong>Patient:</strong> ${p.patientName || name}</p>
+          <p><strong>Medication:</strong> ${p.medication || "N/A"}</p>
+          <p><strong>Dosage:</strong> ${p.dosage || "N/A"}</p>
+          <p><strong>Appointment ID:</strong> ${p.appointmentId || "N/A"}</p>
+          <p><strong>Notes:</strong> ${p.doctorNotes || "No notes"}</p>
+        </div>
+      `).join("")}
     </div>
   `;
 
   modal.classList.add("active");
 }
 
-function showTodaysAppointments() {
-  const today = new Date().toISOString().slice(0, 10);
-  if (dateFilter) {
-    dateFilter.value = today;
+async function loadAppointments() {
+  try {
+    if (!tableBody) return;
+
+    tableBody.innerHTML = "";
+
+    let appointments = await getAllAppointments(selectedDate, patientName, token);
+
+    if (!appointments || appointments.length === 0) {
+      appointments = getDemoAppointments().filter((appointment) => {
+        const matchesDate = appointment.appointmentTime.slice(0, 10) === selectedDate;
+        const matchesName =
+          patientName === "null" ||
+          appointment.patient.name.toLowerCase().includes(patientName.toLowerCase());
+
+        return matchesDate && matchesName;
+      });
+    }
+
+    if (!appointments || appointments.length === 0) {
+      showNoAppointments();
+      return;
+    }
+
+    appointments.forEach((appointment) => {
+      const row = createPatientRow(appointment, openPrescriptionModal);
+      tableBody.appendChild(row);
+    });
+  } catch (error) {
+    console.error("loadAppointments error:", error);
+    showNoAppointments("Unable to load appointments.");
   }
-  applyFilters();
 }
 
-searchBar?.addEventListener("input", applyFilters);
-dateFilter?.addEventListener("change", applyFilters);
-todayBtn?.addEventListener("click", showTodaysAppointments);
+searchBar?.addEventListener("input", () => {
+  patientName = searchBar.value.trim() === "" ? "null" : searchBar.value.trim();
+  loadAppointments();
+});
+
+todayButton?.addEventListener("click", () => {
+  selectedDate = new Date().toISOString().slice(0, 10);
+
+  if (datePicker) {
+    datePicker.value = selectedDate;
+  }
+
+  loadAppointments();
+});
+
+datePicker?.addEventListener("change", () => {
+  selectedDate = datePicker.value;
+  loadAppointments();
+});
 
 closeModal?.addEventListener("click", () => {
   modal?.classList.remove("active");
@@ -177,7 +125,17 @@ document.addEventListener("DOMContentLoaded", () => {
   localStorage.setItem("userRole", "doctor");
 
   if (!localStorage.getItem("token")) {
-    localStorage.setItem("token", "demo-token");
+    localStorage.setItem("token", "demo-doctor-token");
+  }
+
+  token = localStorage.getItem("token");
+
+  if (datePicker) {
+    datePicker.value = selectedDate;
+  }
+
+  if (typeof renderContent === "function") {
+    renderContent();
   }
 
   loadAppointments();

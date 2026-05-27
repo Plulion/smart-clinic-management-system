@@ -1,22 +1,58 @@
-const API_BASE_URL = "/api/appointments";
+import { API_BASE_URL } from "../config/config.js";
 
-export async function getAppointmentsByDoctor(doctorId, token) {
-  const headers = {};
+const APPOINTMENT_API = API_BASE_URL + "/appointments";
+
+function getHeaders(token) {
+  const headers = {
+    "Content-Type": "application/json"
+  };
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/doctor/${doctorId}`, {
-    method: "GET",
-    headers
-  });
+  return headers;
+}
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch doctor appointments.");
+export async function getAllAppointments(selectedDate, patientName, token) {
+  try {
+    const query = new URLSearchParams({
+      date: selectedDate || "",
+      patientName: patientName || "null"
+    });
+
+    const response = await fetch(`${APPOINTMENT_API}?${query.toString()}`, {
+      method: "GET",
+      headers: getHeaders(token)
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("getAllAppointments error:", error);
+    return [];
   }
+}
 
-  return response.json();
+export async function getAppointmentsByDoctor(doctorId, token) {
+  try {
+    const response = await fetch(`${APPOINTMENT_API}/doctor/${doctorId}`, {
+      method: "GET",
+      headers: getHeaders(token)
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("getAppointmentsByDoctor error:", error);
+    return [];
+  }
 }
 
 export function getDemoAppointments() {

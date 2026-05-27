@@ -1,101 +1,105 @@
-// modals.js
 export function openModal(type) {
-  let modalContent = '';
-  if (type === 'addDoctor') {
-    modalContent = `
-         <h2>Add Doctor</h2>
-         <input type="text" id="doctorName" placeholder="Doctor Name" class="input-field">
-         <select id="specialization" class="input-field select-dropdown">
-             <option value="">Specialization</option>
-                        <option value="cardiologist">Cardiologist</option>
-                        <option value="dermatologist">Dermatologist</option>
-                        <option value="neurologist">Neurologist</option>
-                        <option value="pediatrician">Pediatrician</option>
-                        <option value="orthopedic">Orthopedic</option>
-                        <option value="gynecologist">Gynecologist</option>
-                        <option value="psychiatrist">Psychiatrist</option>
-                        <option value="dentist">Dentist</option>
-                        <option value="ophthalmologist">Ophthalmologist</option>
-                        <option value="ent">ENT Specialist</option>
-                        <option value="urologist">Urologist</option>
-                        <option value="oncologist">Oncologist</option>
-                        <option value="gastroenterologist">Gastroenterologist</option>
-                        <option value="general">General Physician</option>
+  const modal = document.getElementById("modal");
+  const modalBody = document.getElementById("modal-body");
 
-        </select>
-        <input type="email" id="doctorEmail" placeholder="Email" class="input-field">
-        <input type="password" id="doctorPassword" placeholder="Password" class="input-field">
-        <input type="text" id="doctorPhone" placeholder="Mobile No." class="input-field">
-        <div class="availability-container">
-        <label class="availabilityLabel">Select Availability:</label>
-          <div class="checkbox-group">
-              <label><input type="checkbox" name="availability" value="09:00-10:00"> 9:00 AM - 10:00 AM</label>
-              <label><input type="checkbox" name="availability" value="10:00-11:00"> 10:00 AM - 11:00 AM</label>
-              <label><input type="checkbox" name="availability" value="11:00-12:00"> 11:00 AM - 12:00 PM</label>
-              <label><input type="checkbox" name="availability" value="12:00-13:00"> 12:00 PM - 1:00 PM</label>
-          </div>
-        </div>
-        <button class="dashboard-btn" id="saveDoctorBtn">Save</button>
-      `;
-  } else if (type === 'patientLogin') {
-    modalContent = `
-        <h2>Patient Login</h2>
-        <input type="text" id="email" placeholder="Email" class="input-field">
-        <input type="password" id="password" placeholder="Password" class="input-field">
-        <button class="dashboard-btn" id="loginBtn">Login</button>
-      `;
-  }
-  else if (type === "patientSignup") {
-    modalContent = `
-      <h2>Patient Signup</h2>
-      <input type="text" id="name" placeholder="Name" class="input-field">
-      <input type="email" id="email" placeholder="Email" class="input-field">
-      <input type="password" id="password" placeholder="Password" class="input-field">
-      <input type="text" id="phone" placeholder="Phone" class="input-field">
-      <input type="text" id="address" placeholder="Address" class="input-field">
-      <button class="dashboard-btn" id="signupBtn">Signup</button>
+  if (!modal || !modalBody) return;
+
+  let content = "";
+
+  if (type === "adminLogin") {
+    content = `
+      <h2>Admin Login</h2>
+      <form class="modal-form" onsubmit="adminLoginHandler(); return false;">
+        <input class="input-field" id="adminUsername" type="text" placeholder="Username" required />
+        <input class="input-field" id="adminPassword" type="password" placeholder="Password" required />
+        <button class="button" type="submit">Login</button>
+      </form>
     `;
-
-  } else if (type === 'adminLogin') {
-    modalContent = `
-        <h2>Admin Login</h2>
-        <input type="text" id="username" name="username" placeholder="Username" class="input-field">
-        <input type="password" id="password" name="password" placeholder="Password" class="input-field">
-        <button class="dashboard-btn" id="adminLoginBtn" >Login</button>
-      `;
-  } else if (type === 'doctorLogin') {
-    modalContent = `
-        <h2>Doctor Login</h2>
-        <input type="text" id="email" placeholder="Email" class="input-field">
-        <input type="password" id="password" placeholder="Password" class="input-field">
-        <button class="dashboard-btn" id="doctorLoginBtn" >Login</button>
-      `;
   }
 
-  document.getElementById('modal-body').innerHTML = modalContent;
-  document.getElementById('modal').style.display = 'block';
-
-  document.getElementById('closeModal').onclick = () => {
-    document.getElementById('modal').style.display = 'none';
-  };
-
-  if (type === "patientSignup") {
-    document.getElementById("signupBtn").addEventListener("click", signupPatient);
+  if (type === "doctorLogin") {
+    content = `
+      <h2>Doctor Login</h2>
+      <form class="modal-form" onsubmit="doctorLoginHandler(); return false;">
+        <input class="input-field" id="doctorEmail" type="email" placeholder="Email" required />
+        <input class="input-field" id="doctorPassword" type="password" placeholder="Password" required />
+        <button class="button" type="submit">Login</button>
+      </form>
+    `;
   }
 
   if (type === "patientLogin") {
-    document.getElementById("loginBtn").addEventListener("click", loginPatient);
+    content = `
+      <h2>Patient Login</h2>
+      <form class="modal-form" onsubmit="loginPatient(); return false;">
+        <input class="input-field" id="patientLoginEmail" type="email" placeholder="Email" required />
+        <input class="input-field" id="patientLoginPassword" type="password" placeholder="Password" required />
+        <button class="button" type="submit">Login</button>
+      </form>
+    `;
   }
 
-  if (type === 'addDoctor') {
-    document.getElementById('saveDoctorBtn').addEventListener('click', adminAddDoctor);
+  if (type === "patientSignup") {
+    content = `
+      <h2>Patient Sign Up</h2>
+      <form class="modal-form" onsubmit="signupPatient(); return false;">
+        <input class="input-field" id="patientName" type="text" placeholder="Full name" required />
+        <input class="input-field" id="patientEmail" type="email" placeholder="Email" required />
+        <input class="input-field" id="patientPassword" type="password" placeholder="Password" required />
+        <input class="input-field" id="patientPhone" type="text" placeholder="Phone" required />
+        <input class="input-field" id="patientAddress" type="text" placeholder="Address" required />
+        <button class="button" type="submit">Sign Up</button>
+      </form>
+    `;
   }
 
-  if (type === 'adminLogin') {
-    document.getElementById('adminLoginBtn').addEventListener('click', adminLoginHandler);
+  if (type === "addDoctor") {
+    content = `
+      <h2>Add Doctor</h2>
+      <form class="modal-form" onsubmit="adminAddDoctor(); return false;">
+        <input class="input-field" id="doctorName" type="text" placeholder="Doctor name" required />
+        <select class="input-field" id="doctorSpecialty" required>
+          <option value="">Select specialty</option>
+          <option value="Cardiologist">Cardiologist</option>
+          <option value="Neurologist">Neurologist</option>
+          <option value="Orthopedist">Orthopedist</option>
+          <option value="Pediatrician">Pediatrician</option>
+          <option value="Dermatologist">Dermatologist</option>
+        </select>
+        <input class="input-field" id="doctorEmail" type="email" placeholder="doctor@example.com" required />
+        <input class="input-field" id="doctorPhone" type="text" placeholder="5551012020" required />
+        <input class="input-field" id="doctorPassword" type="password" placeholder="Password" required />
+        <input class="input-field" id="doctorTime" type="text" placeholder="09:00-10:00" />
+        <button class="button" type="submit">Save Doctor</button>
+      </form>
+    `;
   }
 
-  if (type === 'doctorLogin') {
-    document.getElementById('doctorLoginBtn').addEventListener('click', doctorLoginHandler);
+  modalBody.innerHTML = content;
+  modal.classList.add("active");
+}
+
+export function closeModal() {
+  const modal = document.getElementById("modal");
+  if (modal) {
+    modal.classList.remove("active");
   }
 }
+
+window.openModal = openModal;
+window.closeModal = closeModal;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const closeBtn = document.getElementById("closeModal");
+
+  if (closeBtn) {
+    closeBtn.addEventListener("click", closeModal);
+  }
+
+  window.addEventListener("click", (event) => {
+    const modal = document.getElementById("modal");
+    if (event.target === modal) {
+      closeModal();
+    }
+  });
+});
