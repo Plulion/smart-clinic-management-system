@@ -1,0 +1,57 @@
+services:
+  mysql:
+    image: mysql:9.0
+    container_name: smart-clinic-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: cms
+    ports:
+      - "3307:3306"
+    volumes:
+      - smart_clinic_mysql_data:/var/lib/mysql
+      - ./database-backups/cms_backup.sql:/docker-entrypoint-initdb.d/01-cms_backup.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mongo:
+    image: mongo:8.0
+    container_name: smart-clinic-mongo
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    volumes:
+      - smart_clinic_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: smart-clinic-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/cms?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/prescriptions
+      JWT_SECRET: LOCAL_SECRET_FOR_SMART_CLINIC_123456789
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "8081:8080"
+
+volumes:
+  smart_clinic_mysql_data:
+  smart_clinic_mongo_data:
