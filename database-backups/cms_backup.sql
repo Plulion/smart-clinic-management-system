@@ -1,13 +1,13 @@
--- MySQL dump 10.13  Distrib 8.0.43, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 5.7.24, for osx11.1 (x86_64)
 --
--- Host: 172.21.211.109    Database: cms
+-- Host: localhost    Database: cms
 -- ------------------------------------------------------
--- Server version	8.0.37
+-- Server version	9.0.1
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8mb4 */;
+/*!40101 SET NAMES utf8 */;
 /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
 /*!40103 SET TIME_ZONE='+00:00' */;
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
@@ -21,7 +21,7 @@
 
 DROP TABLE IF EXISTS `admin`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `admin` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `password` varchar(255) NOT NULL,
@@ -46,7 +46,7 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `appointment`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `appointment` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `appointment_time` datetime(6) DEFAULT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE `appointment` (
   KEY `FK4apif2ewfyf14077ichee8g06` (`patient_id`),
   CONSTRAINT `FK4apif2ewfyf14077ichee8g06` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`id`),
   CONSTRAINT `FKoeb98n82eph1dx43v3y2bcmsl` FOREIGN KEY (`doctor_id`) REFERENCES `doctor` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -67,7 +67,7 @@ CREATE TABLE `appointment` (
 
 LOCK TABLES `appointment` WRITE;
 /*!40000 ALTER TABLE `appointment` DISABLE KEYS */;
-INSERT INTO `appointment` VALUES (1,'2026-06-01 09:00:00.000000',0,1,1),(2,'2026-06-02 10:00:00.000000',0,1,2),(3,'2026-06-03 11:00:00.000000',0,2,3),(4,'2026-06-04 14:00:00.000000',0,3,4),(5,'2026-06-05 15:00:00.000000',0,4,5);
+INSERT INTO `appointment` VALUES (1,'2025-01-10 09:00:00.000000',1,1,1),(2,'2025-01-20 10:00:00.000000',1,2,2),(3,'2025-02-10 09:00:00.000000',1,1,3),(4,'2025-02-20 10:00:00.000000',1,3,4),(5,'2025-03-10 09:00:00.000000',1,2,5),(6,'2025-03-20 10:00:00.000000',1,4,1),(7,'2025-04-15 09:00:00.000000',1,1,1),(8,'2025-04-15 10:00:00.000000',1,1,2),(9,'2025-04-15 11:00:00.000000',1,2,3),(10,'2025-05-10 09:00:00.000000',1,2,4),(11,'2025-05-20 10:00:00.000000',1,3,5),(12,'2025-06-10 09:00:00.000000',1,3,1),(13,'2025-06-20 10:00:00.000000',1,4,2),(14,'2025-07-10 09:00:00.000000',1,1,3),(15,'2025-07-20 10:00:00.000000',1,5,4),(16,'2025-08-10 09:00:00.000000',1,2,5),(17,'2025-08-20 10:00:00.000000',1,3,1),(18,'2025-09-10 09:00:00.000000',1,1,2),(19,'2025-09-20 10:00:00.000000',1,4,3),(20,'2025-10-10 09:00:00.000000',1,5,4),(21,'2025-10-20 10:00:00.000000',1,1,5),(22,'2025-11-10 09:00:00.000000',1,2,1),(23,'2025-11-20 10:00:00.000000',1,3,2),(24,'2025-12-10 09:00:00.000000',1,4,3),(25,'2025-12-20 10:00:00.000000',1,5,4),(26,'2026-01-10 09:00:00.000000',1,1,1),(27,'2026-01-20 10:00:00.000000',1,2,2),(28,'2026-02-10 09:00:00.000000',1,1,3),(29,'2026-02-20 10:00:00.000000',1,3,4),(30,'2026-03-10 09:00:00.000000',1,2,5),(31,'2026-03-20 10:00:00.000000',1,4,1),(32,'2026-04-15 09:00:00.000000',1,1,1),(33,'2026-04-15 10:00:00.000000',1,1,2),(34,'2026-04-15 11:00:00.000000',1,2,3),(35,'2026-05-10 09:00:00.000000',1,2,4),(36,'2026-05-20 10:00:00.000000',1,3,5);
 /*!40000 ALTER TABLE `appointment` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -77,7 +77,7 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `doctor`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `doctor` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE `doctor` (
   `phone` varchar(255) DEFAULT NULL,
   `specialty` varchar(50) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -95,7 +95,7 @@ CREATE TABLE `doctor` (
 
 LOCK TABLES `doctor` WRITE;
 /*!40000 ALTER TABLE `doctor` DISABLE KEYS */;
-INSERT INTO `doctor` VALUES (1,'dr.adams@example.com','Dr. Emily Adams','pass12345','5551012020','Cardiologist'),(2,'dr.johnson@example.com','Dr. Mark Johnson','secure4567','5552023030','Neurologist'),(3,'dr.lee@example.com','Dr. Sarah Lee','leePass987','5553034040','Orthopedist'),(4,'dr.wilson@example.com','Dr. Tom Wilson','wils0nPwd','5554045050','Pediatrician'),(5,'dr.brown@example.com','Dr. Alice Brown','brownie123','5555056060','Dermatologist');
+INSERT INTO `doctor` VALUES (1,'dr.adams@example.com','Dr. Emily Adams','pass12345','5551012020','Cardiologist'),(2,'dr.johnson@example.com','Dr. Mark Johnson','secure4567','5552023030','Neurologist'),(3,'dr.lee@example.com','Dr. Sarah Lee','leePass987','5553034040','Orthopedist'),(4,'dr.wilson@example.com','Dr. Tom Wilson','wils0nPwd','5554045050','Pediatrician'),(5,'dr.brown@example.com','Dr. Alice Brown','brownie123','5555056060','Dermatologist'),(6,'peter@example.com','Pedro Pasten','Peter1234','5551055667','Neurologist');
 /*!40000 ALTER TABLE `doctor` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -105,7 +105,7 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `doctor_available_times`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `doctor_available_times` (
   `doctor_id` bigint NOT NULL,
   `available_times` varchar(255) DEFAULT NULL,
@@ -130,7 +130,7 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `patient`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `patient` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `address` varchar(255) DEFAULT NULL,
@@ -161,4 +161,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-27  8:04:00
+-- Dump completed on 2026-05-30 12:20:08
