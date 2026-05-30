@@ -1,39 +1,89 @@
-// loggedPatient.js 
-import { getDoctors } from './services/doctorServices.js';
-import { createDoctorCard } from './components/doctorCard.js';
-import { filterDoctors } from './services/doctorServices.js';
-import { bookAppointment } from './services/appointmentRecordService.js';
+import { getDoctors, filterDoctors } from "./services/doctorServices.js";
+import { createDoctorCard } from "./components/doctorCard.js";
+import { bookAppointment } from "./services/appointmentRecordService.js";
 
+const contentDiv = document.getElementById("content");
+const searchBar = document.getElementById("searchBar");
+const filterTime = document.getElementById("filterTime");
+const filterSpecialty = document.getElementById("filterSpecialty");
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadDoctorCards();
-});
+let allDoctors = [];
 
-function loadDoctorCards() {
-  getDoctors()
-    .then(doctors => {
-      const contentDiv = document.getElementById("content");
-      contentDiv.innerHTML = "";
-
-      doctors.forEach(doctor => {
-        const card = createDoctorCard(doctor);
-        contentDiv.appendChild(card);
-      });
-    })
-    .catch(error => {
-      console.error("Failed to load doctors:", error);
-    });
+function getLoggedPatientFromStorage() {
+  return {
+    id: localStorage.getItem("patientId") || "1",
+    name: localStorage.getItem("patientName") || "Jane Doe",
+    email: localStorage.getItem("patientEmail") || "jane.doe@example.com"
+  };
 }
 
-export function showBookingOverlay(e, doctor, patient) {
-  const button = e.target;
-  const rect = button.getBoundingClientRect();
-  console.log(patient.name)
-  console.log(patient)
+function renderDoctorCards(doctors) {
+  if (!contentDiv) {
+    console.error("Content container not found in logged patient dashboard.");
+    return;
+  }
+
+  contentDiv.innerHTML = "";
+
+  if (!doctors || doctors.length === 0) {
+    contentDiv.innerHTML = `<p>No doctors found with the given filters.</p>`;
+    return;
+  }
+
+  doctors.forEach((doctor) => {
+    const card = createDoctorCard(doctor);
+    contentDiv.appendChild(card);
+  });
+}
+
+async function loadDoctorCards() {
+  try {
+    allDoctors = await getDoctors();
+    console.log("Logged patient doctors loaded:", allDoctors);
+    renderDoctorCards(allDoctors);
+  } catch (error) {
+    console.error("Failed to load doctors:", error);
+    renderDoctorCards([]);
+  }
+}
+
+async function filterDoctorsOnChange() {
+  const name = searchBar?.value?.trim() || "";
+  const time = filterTime?.value || "";
+  const specialty = filterSpecialty?.value || "";
+
+  try {
+    const doctors = await filterDoctors(name, time, specialty);
+    renderDoctorCards(doctors);
+  } catch (error) {
+    console.error("Failed to filter doctors:", error);
+    renderDoctorCards(allDoctors);
+  }
+}
+
+export function showBookingOverlay(event, doctor, patientFromService) {
+  const patient = patientFromService || getLoggedPatientFromStorage();
+
+  if (!patient || !patient.id) {
+    alert("Patient information is missing. Please log in again.");
+    return;
+  }
+
+  if (!doctor || !doctor.id) {
+    alert("Doctor information is missing.");
+    return;
+  }
+
+  const existingModal = document.querySelector(".modalApp");
+  const existingRipple = document.querySelector(".ripple-overlay");
+
+  if (existingModal) existingModal.remove();
+  if (existingRipple) existingRipple.remove();
+
   const ripple = document.createElement("div");
   ripple.classList.add("ripple-overlay");
-  ripple.style.left = `${e.clientX}px`;
-  ripple.style.top = `${e.clientY}px`;
+  ripple.style.left = `${event.clientX}px`;
+  ripple.style.top = `${event.clientY}px`;
   document.body.appendChild(ripple);
 
   setTimeout(() => ripple.classList.add("active"), 50);
@@ -41,98 +91,88 @@ export function showBookingOverlay(e, doctor, patient) {
   const modalApp = document.createElement("div");
   modalApp.classList.add("modalApp");
 
+  const availableTimes = doctor.availableTimes || doctor.available_times || [];
+
   modalApp.innerHTML = `
     <h2>Book Appointment</h2>
-    <input class="input-field" type="text" value="${patient.name}" disabled />
-    <input class="input-field" type="text" value="${doctor.name}" disabled />
-    <input class="input-field" type="text" value="${doctor.specialty}" disabled/>
-    <input class="input-field" type="email" value="${doctor.email}" disabled/>
-    <input class="input-field" type="date" id="appointment-date" />
-    <select class="input-field" id="appointment-time">
+
+    <input class="input-field" type="text" value="${patient.name || "Patient"}" disabled />
+    <input class="input-field" type="text" value="${doctor.name || "Doctor"}" disabled />
+    <input class="input-field" type="text" value="${doctor.specialty || doctor.specialization || "Specialty"}" disabled />
+    <input class="input-field" type="email" value="${doctor.email || ""}" disabled />
+
+    <input class="input-field" type="date" id="appointment-date" required />
+
+    <select class="input-field" id="appointment-time" required>
       <option value="">Select time</option>
-      ${doctor.availableTimes.map(t => `<option value="${t}">${t}</option>`).join('')}
+      ${
+        availableTimes.length > 0
+          ? availableTimes.map((time) => `<option value="${time}">${time}</option>`).join("")
+          : `<option value="09:00-10:00">09:00-10:00</option>`
+      }
     </select>
-    <button class="confirm-booking">Confirm Booking</button>
+
+    <div style="display: flex; gap: 10px; margin-top: 15px;">
+      <button class="confirm-booking">Confirm Booking</button>
+      <button class="cancel-booking" type="button">Cancel</button>
+    </div>
   `;
 
   document.body.appendChild(modalApp);
 
-  setTimeout(() => modalApp.classList.add("active"), 600);
+  setTimeout(() => modalApp.classList.add("active"), 300);
 
-  modalApp.querySelector(".confirm-booking").addEventListener("click", async () => {
-    const date = modalApp.querySelector("#appointment-date").value;
-    const time = modalApp.querySelector("#appointment-time").value;
+  modalApp.querySelector(".cancel-booking")?.addEventListener("click", () => {
+    ripple.remove();
+    modalApp.remove();
+  });
+
+  modalApp.querySelector(".confirm-booking")?.addEventListener("click", async () => {
+    const date = modalApp.querySelector("#appointment-date")?.value;
+    const time = modalApp.querySelector("#appointment-time")?.value;
     const token = localStorage.getItem("token");
-    const startTime = time.split('-')[0];
+
+    if (!date || !time) {
+      alert("Please select appointment date and time.");
+      return;
+    }
+
+    if (!token) {
+      alert("Patient token is missing. Please log in again.");
+      return;
+    }
+
+    const startTime = time.split("-")[0];
+
     const appointment = {
-      doctor: { id: doctor.id },
-      patient: { id: patient.id },
+      doctor: { id: Number(doctor.id) },
+      patient: { id: Number(patient.id) },
       appointmentTime: `${date}T${startTime}:00`,
       status: 0
     };
 
+    console.log("Booking appointment payload:", appointment);
 
-    const { success, message } = await bookAppointment(appointment, token);
+    const result = await bookAppointment(appointment, token);
 
-    if (success) {
-      alert("Appointment Booked successfully");
+    if (result.success) {
+      alert("Appointment booked successfully.");
       ripple.remove();
       modalApp.remove();
     } else {
-      alert("❌ Failed to book an appointment :: " + message);
+      alert("Failed to book appointment: " + result.message);
     }
   });
 }
 
+window.showBookingOverlay = showBookingOverlay;
 
+document.addEventListener("DOMContentLoaded", () => {
+  localStorage.setItem("userRole", "loggedPatient");
 
-// Filter Input
-document.getElementById("searchBar").addEventListener("input", filterDoctorsOnChange);
-document.getElementById("filterTime").addEventListener("change", filterDoctorsOnChange);
-document.getElementById("filterSpecialty").addEventListener("change", filterDoctorsOnChange);
+  searchBar?.addEventListener("input", filterDoctorsOnChange);
+  filterTime?.addEventListener("change", filterDoctorsOnChange);
+  filterSpecialty?.addEventListener("change", filterDoctorsOnChange);
 
-
-
-function filterDoctorsOnChange() {
-  const searchBar = document.getElementById("searchBar").value.trim();
-  const filterTime = document.getElementById("filterTime").value;
-  const filterSpecialty = document.getElementById("filterSpecialty").value;
-
-
-  const name = searchBar.length > 0 ? searchBar : null;
-  const time = filterTime.length > 0 ? filterTime : null;
-  const specialty = filterSpecialty.length > 0 ? filterSpecialty : null;
-
-  filterDoctors(name, time, specialty)
-    .then(response => {
-      const doctors = response.doctors;
-      const contentDiv = document.getElementById("content");
-      contentDiv.innerHTML = "";
-
-      if (doctors.length > 0) {
-        console.log(doctors);
-        doctors.forEach(doctor => {
-          const card = createDoctorCard(doctor);
-          contentDiv.appendChild(card);
-        });
-      } else {
-        contentDiv.innerHTML = "<p>No doctors found with the given filters.</p>";
-        console.log("Nothing");
-      }
-    })
-    .catch(error => {
-      console.error("Failed to filter doctors:", error);
-      alert("❌ An error occurred while filtering doctors.");
-    });
-}
-
-export function renderDoctorCards(doctors) {
-  const contentDiv = document.getElementById("content");
-  contentDiv.innerHTML = "";
-
-  doctors.forEach(doctor => {
-    const card = createDoctorCard(doctor);
-    contentDiv.appendChild(card);
-  });
-
-}
+  loadDoctorCards();
+});

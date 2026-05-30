@@ -1,59 +1,131 @@
-// patientAppointment.js
-import { getPatientAppointments, getPatientData, filterAppointments } from "./services/patientServices.js";
+import { getPatientAppointments } from "./services/patientServices.js";
 
 const tableBody = document.getElementById("patientTableBody");
+const searchBar = document.getElementById("searchBar");
+const appointmentFilter = document.getElementById("appointmentFilter");
+
 const token = localStorage.getItem("token");
+const patientId = Number(localStorage.getItem("patientId") || "1");
 
 let allAppointments = [];
-let filteredAppointments = [];
-let patientId = null;
 
 document.addEventListener("DOMContentLoaded", initializePage);
 
+function normalizeAppointment(appointment) {
+  const patient = appointment.patient || {};
+  const doctor = appointment.doctor || {};
+
+  const rawDateTime =
+    appointment.appointmentTime ||
+    appointment.dateTime ||
+    appointment.date ||
+    "";
+
+  let appointmentDate = "N/A";
+  let appointmentTimeOnly = "N/A";
+
+  if (rawDateTime) {
+    const raw = String(rawDateTime);
+
+    if (raw.includes("T")) {
+      appointmentDate = raw.slice(0, 10);
+      appointmentTimeOnly = raw.slice(11, 16);
+    } else {
+      appointmentDate = raw.slice(0, 10);
+      appointmentTimeOnly = raw.slice(11, 16) || "N/A";
+    }
+  }
+
+  return {
+    id: appointment.id,
+    patientId: appointment.patientId || patient.id,
+    patientName: appointment.patientName || patient.name || "You",
+    doctorId: appointment.doctorId || doctor.id,
+    doctorName: appointment.doctorName || doctor.name || "N/A",
+    appointmentDate,
+    appointmentTimeOnly,
+    status: appointment.status
+  };
+}
+
+function isCurrentPatientAppointment(appointment) {
+  return Number(appointment.patientId) === patientId;
+}
+
 async function initializePage() {
   try {
-    if (!token) throw new Error("No token found");
+    if (!token) {
+      throw new Error("No patient token found. Please log in again.");
+    }
 
-    const patient = await getPatientData(token);
-    if (!patient) throw new Error("Failed to fetch patient details");
+    if (!patientId) {
+      throw new Error("No patientId found in localStorage.");
+    }
 
-    patientId = Number(patient.id);
+    console.log("Loading appointments for patientId:", patientId);
 
-    const appointmentData = await getPatientAppointments(patientId, token, "patient") || [];
-    allAppointments = appointmentData.filter(app => app.patientId === patientId);
+    const appointmentData = await getPatientAppointments(patientId, token);
+
+    console.log("Raw patient appointments:", appointmentData);
+
+    allAppointments = (appointmentData || [])
+      .map(normalizeAppointment)
+      .filter(isCurrentPatientAppointment);
+
+    console.log("Normalized patient appointments:", allAppointments);
 
     renderAppointments(allAppointments);
   } catch (error) {
-    console.error("Error loading appointments:", error);
-    alert("❌ Failed to load your appointments.");
+    console.error("Error loading patient appointments:", error);
+    renderAppointments([]);
   }
 }
 
+function getStatusLabel(status) {
+  if (status === 0 || status === "0") return "Scheduled";
+  if (status === 1 || status === "1") return "Completed";
+  if (status === 2 || status === "2") return "Cancelled";
+  return "Unknown";
+}
+
 function renderAppointments(appointments) {
-  tableBody.innerHTML = "";
-
-  const actionTh = document.querySelector("#patientTable thead tr th:last-child");
-  if (actionTh) {
-    actionTh.style.display = "table-cell"; // Always show "Actions" column
-  }
-
-  if (!appointments.length) {
-    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No Appointments Found</td></tr>`;
+  if (!tableBody) {
+    console.error("patientTableBody not found.");
     return;
   }
 
-  appointments.forEach(appointment => {
+  tableBody.innerHTML = "";
+
+  if (!appointments || appointments.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align:center;">No Appointments Found</td>
+      </tr>
+    `;
+    return;
+  }
+
+  appointments.forEach((appointment) => {
     const tr = document.createElement("tr");
+
+    const canEdit = appointment.status === 0 || appointment.status === "0";
+
     tr.innerHTML = `
       <td>${appointment.patientName || "You"}</td>
-      <td>${appointment.doctorName}</td>
-      <td>${appointment.appointmentDate}</td>
-      <td>${appointment.appointmentTimeOnly}</td>
-      <td>${appointment.status == 0 ? `<img src="../assets/images/edit/edit.png" alt="Edit" class="prescription-btn" data-id="${appointment.patientId}">` : "-"}</td>
+      <td>${appointment.doctorName || "N/A"}</td>
+      <td>${appointment.appointmentDate || "N/A"}</td>
+      <td>${appointment.appointmentTimeOnly || "N/A"}</td>
+      <td>
+        ${
+          canEdit
+            ? `<button class="edit-appointment-btn" data-id="${appointment.id}">Edit</button>`
+            : getStatusLabel(appointment.status)
+        }
+      </td>
     `;
 
-    if (appointment.status == 0) {
-      const actionBtn = tr.querySelector(".prescription-btn");
+    if (canEdit) {
+      const actionBtn = tr.querySelector(".edit-appointment-btn");
       actionBtn?.addEventListener("click", () => redirectToUpdatePage(appointment));
     }
 
@@ -62,44 +134,54 @@ function renderAppointments(appointments) {
 }
 
 function redirectToUpdatePage(appointment) {
-  // Prepare the query parameters
   const queryString = new URLSearchParams({
     appointmentId: appointment.id,
     patientId: appointment.patientId,
     patientName: appointment.patientName || "You",
-    doctorName: appointment.doctorName,
-    doctorId: appointment.doctorId,
-    appointmentDate: appointment.appointmentDate,
-    appointmentTime: appointment.appointmentTimeOnly,
+    doctorName: appointment.doctorName || "",
+    doctorId: appointment.doctorId || "",
+    appointmentDate: appointment.appointmentDate || "",
+    appointmentTime: appointment.appointmentTimeOnly || ""
   }).toString();
 
-  // Redirect to the update page with the query string
-  setTimeout(() => {
-    window.location.href = `/pages/updateAppointment.html?${queryString}`;
-  }, 100);
+  window.location.href = `/pages/updateAppointment.html?${queryString}`;
 }
 
+function applyLocalFilters() {
+  const searchValue = (searchBar?.value || "").toLowerCase().trim();
+  const filterValue = appointmentFilter?.value || "";
 
-// Search and Filter Listeners
-document.getElementById("searchBar").addEventListener("input", handleFilterChange);
-document.getElementById("appointmentFilter").addEventListener("change", handleFilterChange);
+  let filtered = [...allAppointments];
 
-async function handleFilterChange() {
-  const searchBarValue = document.getElementById("searchBar").value.trim();
-  const filterValue = document.getElementById("appointmentFilter").value;
-
-  const name = searchBarValue || null;
-  const condition = filterValue === "allAppointments" ? null : filterValue || null;
-
-  try {
-    const response = await filterAppointments(condition, name, token);
-    const appointments = response?.appointments || [];
-    filteredAppointments = appointments.filter(app => app.patientId === patientId);
-
-    renderAppointments(filteredAppointments);
-  } catch (error) {
-    console.error("Failed to filter appointments:", error);
-    alert("❌ An error occurred while filtering appointments.");
+  if (searchValue) {
+    filtered = filtered.filter((appointment) => {
+      return (
+        appointment.doctorName.toLowerCase().includes(searchValue) ||
+        appointment.patientName.toLowerCase().includes(searchValue)
+      );
+    });
   }
+
+  if (filterValue && filterValue !== "allAppointments") {
+    filtered = filtered.filter((appointment) => {
+      if (filterValue === "scheduled") {
+        return appointment.status === 0 || appointment.status === "0";
+      }
+
+      if (filterValue === "completed") {
+        return appointment.status === 1 || appointment.status === "1";
+      }
+
+      if (filterValue === "cancelled") {
+        return appointment.status === 2 || appointment.status === "2";
+      }
+
+      return true;
+    });
+  }
+
+  renderAppointments(filtered);
 }
 
+searchBar?.addEventListener("input", applyLocalFilters);
+appointmentFilter?.addEventListener("change", applyLocalFilters);
