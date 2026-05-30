@@ -1,32 +1,56 @@
 import { openModal } from "../components/modals.js";
 import { API_BASE_URL } from "../config/config.js";
 
-const ADMIN_API = API_BASE_URL + "/admin";
-const DOCTOR_API = API_BASE_URL + "/doctor/login";
+const ADMIN_LOGIN_API = API_BASE_URL + "/admin/login";
+const DOCTOR_LOGIN_API = API_BASE_URL + "/doctor/login";
 
 function selectRole(role) {
   localStorage.setItem("userRole", role);
 }
 
+function getValueByPossibleIds(ids) {
+  for (const id of ids) {
+    const element = document.getElementById(id);
+    if (element && element.value !== undefined) {
+      return element.value.trim();
+    }
+  }
+  return "";
+}
+
 window.adminLoginHandler = async function () {
-  const username = document.getElementById("adminUsername")?.value;
-  const password = document.getElementById("adminPassword")?.value;
+  const username = getValueByPossibleIds([
+    "adminUsername",
+    "username",
+    "adminEmail",
+    "email"
+  ]);
+
+  const password = getValueByPossibleIds([
+    "adminPassword",
+    "password"
+  ]);
 
   const admin = { username, password };
 
+  console.log("Admin login URL:", ADMIN_LOGIN_API);
+  console.log("Admin login payload:", admin);
+
   try {
-    const response = await fetch(`${ADMIN_API}/login`, {
+    const response = await fetch(ADMIN_LOGIN_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(admin)
     });
 
+    const data = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-      alert("Invalid credentials!");
+      console.error("Admin login failed:", data);
+      alert(data.error || "Invalid credentials!");
       return;
     }
 
-    const data = await response.json();
     localStorage.setItem("token", data.token || "demo-admin-token");
     selectRole("admin");
     window.location.href = "/admin/dashboard";
@@ -37,24 +61,37 @@ window.adminLoginHandler = async function () {
 };
 
 window.doctorLoginHandler = async function () {
-  const email = document.getElementById("doctorEmail")?.value;
-  const password = document.getElementById("doctorPassword")?.value;
+  const identifier = getValueByPossibleIds([
+    "doctorEmail",
+    "doctorIdentifier",
+    "email"
+  ]);
 
-  const doctor = { email, password };
+  const password = getValueByPossibleIds([
+    "doctorPassword",
+    "password"
+  ]);
+
+  const doctor = { identifier, password };
+
+  console.log("Doctor login URL:", DOCTOR_LOGIN_API);
+  console.log("Doctor login payload:", doctor);
 
   try {
-    const response = await fetch(DOCTOR_API, {
+    const response = await fetch(DOCTOR_LOGIN_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(doctor)
     });
 
+    const data = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-      alert("Invalid credentials!");
+      console.error("Doctor login failed:", data);
+      alert(data.error || "Invalid credentials!");
       return;
     }
 
-    const data = await response.json();
     localStorage.setItem("token", data.token || "demo-doctor-token");
     localStorage.setItem("doctorId", data.id || data.doctorId || "1");
     selectRole("doctor");

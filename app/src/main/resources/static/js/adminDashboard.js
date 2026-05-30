@@ -1,11 +1,13 @@
 import { openModal, closeModal } from "./components/modals.js";
 import { createDoctorCard } from "./components/doctorCard.js";
-import { getDoctors, filterDoctors, saveDoctor } from "./services/doctorServices.js";
+import { getDoctors, saveDoctor } from "./services/doctorServices.js";
 
 const contentDiv = document.getElementById("content");
 const searchBar = document.getElementById("searchBar");
 const filterTime = document.getElementById("filterTime");
 const filterSpecialty = document.getElementById("filterSpecialty");
+
+let allDoctors = [];
 
 function renderDoctorCards(doctors) {
   if (!contentDiv) return;
@@ -24,17 +26,43 @@ function renderDoctorCards(doctors) {
 }
 
 async function loadDoctorCards() {
-  const doctors = await getDoctors();
-  renderDoctorCards(doctors);
+  allDoctors = await getDoctors();
+
+  console.log("Doctors loaded in admin dashboard:", allDoctors);
+
+  renderDoctorCards(allDoctors);
 }
 
-async function filterDoctorsOnChange() {
-  const name = searchBar?.value || "";
-  const time = filterTime?.value || "";
-  const specialty = filterSpecialty?.value || "";
+function applyLocalFilters() {
+  const name = (searchBar?.value || "").toLowerCase().trim();
+  const time = (filterTime?.value || "").toLowerCase().trim();
+  const specialty = (filterSpecialty?.value || "").toLowerCase().trim();
 
-  const doctors = await filterDoctors(name, time, specialty);
-  renderDoctorCards(doctors);
+  const filteredDoctors = allDoctors.filter((doctor) => {
+    const doctorName = (doctor.name || "").toLowerCase();
+    const doctorSpecialty = (doctor.specialty || "").toLowerCase();
+    const availableTimes = doctor.availableTimes || [];
+
+    const matchesName =
+      !name ||
+      doctorName.includes(name);
+
+    const matchesSpecialty =
+      !specialty ||
+      specialty === "all specialties" ||
+      doctorSpecialty === specialty;
+
+    const matchesTime =
+      !time ||
+      time === "all times" ||
+      availableTimes.some((slot) => slot.toLowerCase().includes(time));
+
+    return matchesName && matchesSpecialty && matchesTime;
+  });
+
+  console.log("Filtered doctors:", filteredDoctors);
+
+  renderDoctorCards(filteredDoctors);
 }
 
 window.adminAddDoctor = async function () {
@@ -61,7 +89,7 @@ window.adminAddDoctor = async function () {
   if (result.success) {
     alert(result.message);
     closeModal();
-    loadDoctorCards();
+    await loadDoctorCards();
   } else {
     alert(result.message);
   }
@@ -69,10 +97,6 @@ window.adminAddDoctor = async function () {
 
 document.addEventListener("DOMContentLoaded", () => {
   localStorage.setItem("userRole", "admin");
-
-  if (!localStorage.getItem("token")) {
-    localStorage.setItem("token", "demo-admin-token");
-  }
 
   const addDocBtn = document.getElementById("addDocBtn");
 
@@ -82,9 +106,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  searchBar?.addEventListener("input", filterDoctorsOnChange);
-  filterTime?.addEventListener("change", filterDoctorsOnChange);
-  filterSpecialty?.addEventListener("change", filterDoctorsOnChange);
+  searchBar?.addEventListener("input", applyLocalFilters);
+  filterTime?.addEventListener("change", applyLocalFilters);
+  filterSpecialty?.addEventListener("change", applyLocalFilters);
 
   loadDoctorCards();
 });

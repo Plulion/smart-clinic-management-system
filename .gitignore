@@ -127,3 +127,16 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# macOS
+.DS_Store
+
+# Eclipse / Spring Tools Suite
+.classpath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+# Local Spring profile
+app/src/main/resources/application-local.properties
