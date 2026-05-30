@@ -14,7 +14,7 @@ let selectedDate = new Date().toISOString().slice(0, 10);
 let patientName = "null";
 let token = localStorage.getItem("token");
 
-function showNoAppointments(message = "No Appointments found for today") {
+function showMessage(message) {
   if (!tableBody) return;
 
   tableBody.innerHTML = `
@@ -22,6 +22,66 @@ function showNoAppointments(message = "No Appointments found for today") {
       <td colspan="7" class="noPatientRecord">${message}</td>
     </tr>
   `;
+}
+
+function normalizePatientName(value) {
+  const cleaned = (value || "").trim();
+  return cleaned === "" ? "null" : cleaned;
+}
+
+function toIsoDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+async function fetchAppointmentsByDate(date, name = "null") {
+  const appointments = await getAllAppointments(date, name, token);
+
+  if (appointments && appointments.length > 0) {
+    return appointments;
+  }
+
+  return [];
+}
+
+async function findMostRecentDateWithAppointments() {
+  const today = new Date();
+  const maxLookBackDays = 730; // Searches up to two years back.
+
+  for (let i = 0; i <= maxLookBackDays; i++) {
+    const candidateDate = new Date(today);
+    candidateDate.setDate(today.getDate() - i);
+
+    const candidateIsoDate = toIsoDate(candidateDate);
+    const appointments = await fetchAppointmentsByDate(candidateIsoDate, patientName);
+
+    if (appointments.length > 0) {
+      return {
+        date: candidateIsoDate,
+        appointments
+      };
+    }
+  }
+
+  return {
+    date: null,
+    appointments: []
+  };
+}
+
+function renderAppointments(appointments) {
+  if (!tableBody) return;
+
+  tableBody.innerHTML = "";
+
+  if (!appointments || appointments.length === 0) {
+    showMessage("No appointments found.");
+    return;
+  }
+
+  appointments.forEach((appointment) => {
+    const row = createPatientRow(appointment, openPrescriptionModal);
+    tableBody.appendChild(row);
+  });
 }
 
 async function openPrescriptionModal(name) {
@@ -32,6 +92,7 @@ async function openPrescriptionModal(name) {
   try {
     prescriptions = await getPrescriptionsByPatientName(name, token);
   } catch (error) {
+    console.error("Prescription service error:", error);
     prescriptions = getDemoPrescriptions(name);
   }
 
@@ -57,43 +118,54 @@ async function openPrescriptionModal(name) {
   modal.classList.add("active");
 }
 
-async function loadAppointments() {
+async function loadAppointments(options = {}) {
+  const { autoFindDate = false } = options;
+
   try {
     if (!tableBody) return;
 
-    tableBody.innerHTML = "";
+    token = localStorage.getItem("token");
 
-    let appointments = await getAllAppointments(selectedDate, patientName, token);
-
-    if (!appointments || appointments.length === 0) {
-      appointments = getDemoAppointments().filter((appointment) => {
-        const matchesDate = appointment.appointmentTime.slice(0, 10) === selectedDate;
-        const matchesName =
-          patientName === "null" ||
-          appointment.patient.name.toLowerCase().includes(patientName.toLowerCase());
-
-        return matchesDate && matchesName;
-      });
-    }
-
-    if (!appointments || appointments.length === 0) {
-      showNoAppointments();
+    if (!token) {
+      showMessage("Doctor token is missing. Please log in again.");
       return;
     }
 
-    appointments.forEach((appointment) => {
-      const row = createPatientRow(appointment, openPrescriptionModal);
-      tableBody.appendChild(row);
-    });
+    showMessage("Loading appointments...");
+
+    let appointments = await fetchAppointmentsByDate(selectedDate, patientName);
+
+    if ((!appointments || appointments.length === 0) && autoFindDate) {
+      showMessage("No appointments for today. Searching the most recent appointment date...");
+
+      const result = await findMostRecentDateWithAppointments();
+
+      if (result.date) {
+        selectedDate = result.date;
+
+        if (datePicker) {
+          datePicker.value = selectedDate;
+        }
+
+        appointments = result.appointments;
+      }
+    }
+
+    if (!appointments || appointments.length === 0) {
+      showMessage(`No appointments found for ${selectedDate}.`);
+      return;
+    }
+
+    renderAppointments(appointments);
   } catch (error) {
     console.error("loadAppointments error:", error);
-    showNoAppointments("Unable to load appointments.");
+    showMessage("Unable to load appointments.");
   }
 }
 
 searchBar?.addEventListener("input", () => {
-  patientName = searchBar.value.trim() === "" ? "null" : searchBar.value.trim();
-  loadAppointments();
+  patientName = normalizePatientName(searchBar.value);
+  loadAppointments({ autoFindDate: false });
 });
 
 todayButton?.addEventListener("click", () => {
@@ -103,12 +175,12 @@ todayButton?.addEventListener("click", () => {
     datePicker.value = selectedDate;
   }
 
-  loadAppointments();
+  loadAppointments({ autoFindDate: true });
 });
 
 datePicker?.addEventListener("change", () => {
   selectedDate = datePicker.value;
-  loadAppointments();
+  loadAppointments({ autoFindDate: false });
 });
 
 closeModal?.addEventListener("click", () => {
@@ -124,11 +196,12 @@ window.addEventListener("click", (event) => {
 document.addEventListener("DOMContentLoaded", () => {
   localStorage.setItem("userRole", "doctor");
 
-  if (!localStorage.getItem("token")) {
-    localStorage.setItem("token", "demo-doctor-token");
-  }
-
   token = localStorage.getItem("token");
+
+  if (!token) {
+    showMessage("Please log in as a doctor to view appointments.");
+    return;
+  }
 
   if (datePicker) {
     datePicker.value = selectedDate;
@@ -138,5 +211,5 @@ document.addEventListener("DOMContentLoaded", () => {
     renderContent();
   }
 
-  loadAppointments();
+  loadAppointments({ autoFindDate: true });
 });
