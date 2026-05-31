@@ -1,13 +1,26 @@
 function formatDateTime(value) {
   if (!value) return "N/A";
 
-  const date = new Date(value);
+  const raw = String(value);
 
-  if (Number.isNaN(date.getTime())) {
-    return value;
+  // Expected backend format: 2026-04-15T09:00:00
+  // We avoid new Date() to prevent timezone conversion.
+  if (raw.includes("T")) {
+    const [datePart, timePart] = raw.split("T");
+    const time = timePart ? timePart.slice(0, 5) : "";
+
+    return `${datePart} ${time}`;
   }
 
-  return date.toLocaleString();
+  // Expected SQL-like format: 2026-04-15 09:00:00
+  if (raw.includes(" ")) {
+    const [datePart, timePart] = raw.split(" ");
+    const time = timePart ? timePart.slice(0, 5) : "";
+
+    return `${datePart} ${time}`;
+  }
+
+  return raw;
 }
 
 function getStatusLabel(status) {
