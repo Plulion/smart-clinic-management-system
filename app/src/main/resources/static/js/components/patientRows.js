@@ -1,14 +1,21 @@
-function formatDateTime(value) {
+function formatDateTime(appointment) {
+  if (!appointment) return "N/A";
+
+  // Prefer backend preformatted fields to avoid timezone conversion.
+  if (appointment.appointmentDate && appointment.appointmentTimeOnly) {
+    return `${appointment.appointmentDate} ${String(appointment.appointmentTimeOnly).slice(0, 5)}`;
+  }
+
+  const value = appointment.appointmentTime || appointment.appointment_time;
+
   if (!value) return "N/A";
 
   const raw = String(value);
 
   // Expected backend format: 2026-04-15T09:00:00
-  // We avoid new Date() to prevent timezone conversion.
   if (raw.includes("T")) {
     const [datePart, timePart] = raw.split("T");
     const time = timePart ? timePart.slice(0, 5) : "";
-
     return `${datePart} ${time}`;
   }
 
@@ -16,7 +23,6 @@ function formatDateTime(value) {
   if (raw.includes(" ")) {
     const [datePart, timePart] = raw.split(" ");
     const time = timePart ? timePart.slice(0, 5) : "";
-
     return `${datePart} ${time}`;
   }
 
@@ -40,7 +46,7 @@ export function createPatientRow(appointment, onViewPrescription) {
     <td>${patient.name || appointment.patientName || "N/A"}</td>
     <td>${patient.phone || appointment.patientPhone || "N/A"}</td>
     <td>${patient.email || appointment.patientEmail || "N/A"}</td>
-    <td>${formatDateTime(appointment.appointmentTime || appointment.appointment_time)}</td>
+    <td>${formatDateTime(appointment)}</td>
     <td>${getStatusLabel(appointment.status)}</td>
     <td>
       <button class="prescription-btn">View Prescriptions</button>
